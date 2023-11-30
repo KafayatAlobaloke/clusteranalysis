@@ -1,0 +1,133 @@
+---
+output: Cluster Analysis
+  author: Kafayat Alobaloke
+---
+
+```{r}
+library(factoextra)
+library(corrplot)
+```
+
+```{r}
+data <- read.csv('leaf.csv')
+```
+
+```{r}
+# Summary of the data
+summary(data)
+```
+
+# Str data gives the type in which data is stored, this shows its treating Date as Factor so that needs to ve convereted to Date format
+```{r}
+# Understanding the datatype of dataset
+str(data)
+```
+
+In K-means Algorithm we have to define the number of Cluster which represent with k
+fortunately in R, We have some interesting functions for selecting k.
+```{r}
+fviz_nbclust(data, kmeans, method = "wss")
+# method can be = 'gap_stat', 'wss', 'silhouette'
+fviz_nbclust(data, kmeans, method = "gap_stat")
+fviz_nbclust(data, kmeans, method = "silhouette")
+```
+
+```{r}
+km1 <- kmeans(data, 2)
+km1
+```
+
+All method('wss', 'silhouette', and gap_stat) show us it's better choose k = 2
+The function fviz_cluster() [factoextra package] can be used to easily visualize k-means clusters. It takes k-means results and the original data as arguments. In the resulting plot, observations are represented by points, using principal components if the number of variables is greater than 2
+```{r}
+fviz_cluster(km1, data = data,
+  palette = c("#2E9FDF", "#00AFBB"),
+  ellipse.type = "euclid", # Concentration ellipse
+  star.plot = TRUE, # Add segments from centroids to items
+  repel = TRUE, # Avoid label overplotting (slow)
+  ggtheme = theme_minimal())
+```
+
+```{r}
+km2 <- kmeans(data, 3)
+km2
+```
+
+```{r}
+fviz_cluster(km2, data = data,
+  palette = c("#2E9FDF", "#00AFBB", "#ADFFBB"),
+  ellipse.type = "euclid", # Concentration ellipse
+  star.plot = TRUE, # Add segments from centroids to items
+  repel = TRUE, # Avoid label overplotting (slow)
+  ggtheme = theme_minimal())
+```
+
+```{r}
+# Splitting data into training and testing with 60 and 40 percent respectively
+index <- sample(2, nrow(data), replace=TRUE, prob = c(0.60, 0.40))
+traindata <- data[index==1, ]
+testdata <- data[index==2, ]
+```
+
+```{r}
+plot_ <- function(i){
+        cluster <- kmeans(traindata, centers = i, nstart = 25)
+        plot_list <- fviz_cluster(cluster, geom = "point", data = traindata) + ggtitle(paste("k = ", i)) + theme_minimal()
+        return(plot_list)
+  }
+    
+
+library(gridExtra)
+grid.arrange(plot_(2),plot_(3),plot_(4),plot_(5), nrow = 2) + theme_minimal()
+```
+
+```{r}
+plot_ <- function(i){
+        cluster <- kmeans(testdata, centers = i, nstart = 25)
+        plot_list <- fviz_cluster(cluster, geom = "point", data = testdata) + ggtitle(paste("k = ", i)) + theme_minimal()
+        return(plot_list)
+  }
+    
+
+library(gridExtra)
+grid.arrange(plot_(2),plot_(3),plot_(4),plot_(5), nrow = 2) + theme_minimal()
+```
+
+```{r}
+leaf <- data[,-16]
+leaf
+```
+
+```{r}
+library(RColorBrewer)
+palette(alpha(brewer.pal(9,'Set1'), 0.5))
+plot(testdata, col=leaf$Specimen, pch=16, bty="n") + theme_minimal()
+```
+
+```{r}
+# Converting the integer data to factor
+leaf$Species <- as.factor(leaf$Species)
+leaf$SpecimenNumber <- as.factor(leaf$SpecimenNumber)
+```
+
+```{r}
+summary(leaf)
+```
+
+```{r}
+ggplot(leaf, aes(x=SpecimenNumber, fill = SpecimenNumber)) + 
+  theme_bw()+
+  geom_bar()+
+  labs(x = "SpecimenNumber", y = "Data Count")
+```
+
+```{r}
+corr_mat <- cor(leaf[,3:ncol(leaf)])
+corrplot(corr_mat, order = "hclust", tl.cex = 1, addrect = 8)
+```
+
+```{r}
+ggplot(leaf, aes(x = SpecimenNumber, fill = SpecimenNumber)) +
+  geom_density(alpha=0.5) +
+  scale_fill_discrete(name = "Leaf Classification")
+```
